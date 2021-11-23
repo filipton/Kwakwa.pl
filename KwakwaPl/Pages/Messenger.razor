@@ -16,90 +16,92 @@
 
 <br/>
 
-@if (GroupId == -1)
-{
-    <h1>GROUPS:</h1>
-    foreach (MessageGroup group in MessagesContainer.Groups)
+<div @ref="_dropZoneElement" class="drop-zone">
+    @if (GroupId == -1)
     {
-        <button class="btn btn-primary" @onclick="() => SelectGroup(group.GroupName)">@(group.GroupName)</button>
+        <h1>GROUPS:</h1>
+        foreach (MessageGroup group in MessagesContainer.Groups)
+        {
+            <button class="btn btn-primary" @onclick="() => SelectGroup(group.GroupName)">@(group.GroupName)</button>
+        }
     }
-}
-else
-{
-    if (CurrentUserName == null)
+    else
     {
-        <EditForm Model="@loginModel" OnValidSubmit="@HandleLogin" style="width: 100%;">
-            <DataAnnotationsValidator />
-
-            <div class="d-flex align-items-center justify-content-center">
-                <div class="d-flex flex-column">
-                    <input type="text" class="p-2 form-control" placeholder="Enter Nickname" aria-label="Enter Nickname" aria-describedby="basic-addon2" @bind-value="loginModel.UserName" style="width: 100%;">
-                    <button type="submit" class="p-2 btn btn-primary" style="width: 100%;"><b>SET NICKNAME</b></button>
-                </div>
-            </div>
-        </EditForm>
-    }
-    else if (_Cookies.GetValueOrDefault($"gp-{GroupId}") != MessagesContainer.Groups[GroupId].Password)
-    {
-        <EditForm Model="@passwordModel" OnValidSubmit="@HandleGroupPassword" style="width: 100%;">
-            <DataAnnotationsValidator />
-    
-            <div class="d-flex align-items-center justify-content-center">
-                <div class="d-flex flex-column">
-                    <input type="text" class="p-2 form-control" placeholder="Enter Password" aria-label="Enter Password" aria-describedby="basic-addon2" @bind-value="passwordModel.Password" style="width: 100%;">
-                    <button type="submit" class="p-2 btn btn-primary" style="width: 100%;"><b>ENTER PASSWORD</b></button>
-                </div>
-            </div>
-        </EditForm>
-    }   
-}
-
-@if (GroupId > -1)
-{
-     <div style="@((CurrentUserName == null || _Cookies.GetValueOrDefault($"gp-{GroupId}") != MessagesContainer.Groups[GroupId].Password) ? "visibility: hidden;" : "")">
-        <div @ref="_dropZoneElement" class="drop-zone input-group mb-3">
-              <EditForm Model="@messageBoxModel" OnValidSubmit="@HandleMessage" style="width: 100%;">
+        if (CurrentUserName == null)
+        {
+            <EditForm Model="@loginModel" OnValidSubmit="@HandleLogin" style="width: 100%;">
                 <DataAnnotationsValidator />
 
-                <div class="form-group d-flex justify-content-between">
-                    <input type="text" class="form-control" placeholder="Type message here..." aria-label="Type message here..." aria-describedby="basic-addon2" @bind-value="messageBoxModel.Message" style="width: 100%;">
-                    <button type="button" class="btn btn-primary" onclick="document.getElementById('inputImg').click()"><i class="oi oi-data-transfer-upload"></i></button>
-                    <button type="submit" class="btn btn-primary"><span class="oi oi-arrow-circle-right"></span></button>
+                <div class="d-flex align-items-center justify-content-center">
+                    <div class="d-flex flex-column">
+                        <input type="text" class="p-2 form-control" placeholder="Enter Nickname" aria-label="Enter Nickname" aria-describedby="basic-addon2" @bind-value="loginModel.UserName" style="width: 100%;">
+                        <button type="submit" class="p-2 btn btn-primary" style="width: 100%;"><b>SET NICKNAME</b></button>
+                    </div>
                 </div>
-             </EditForm>
-        </div>
+            </EditForm>
+        }
+        else if (_Cookies.GetValueOrDefault($"gp-{GroupId}") != MessagesContainer.Groups[GroupId].Password)
+        {
+            <EditForm Model="@passwordModel" OnValidSubmit="@HandleGroupPassword" style="width: 100%;">
+                <DataAnnotationsValidator />
+        
+                <div class="d-flex align-items-center justify-content-center">
+                    <div class="d-flex flex-column">
+                        <input type="text" class="p-2 form-control" placeholder="Enter Password" aria-label="Enter Password" aria-describedby="basic-addon2" @bind-value="passwordModel.Password" style="width: 100%;">
+                        <button type="submit" class="p-2 btn btn-primary" style="width: 100%;"><b>ENTER PASSWORD</b></button>
+                    </div>
+                </div>
+            </EditForm>
+        }   
+    }
 
-        <div id="messages">
-            @foreach (Message umsg in MessagesContainer.Groups[GroupId].Messages.Reverse<Message>())
-            {
-                if (umsg.Msg.Contains("https://i.imgur.com/"))
+    @if (CurrentUserName != null && GroupId > -1 && _Cookies.GetValueOrDefault($"gp-{GroupId}") == MessagesContainer.Groups[GroupId].Password)
+    {
+         <div>
+            <div class="input-group mb-3">
+                  <EditForm Model="@messageBoxModel" OnValidSubmit="@HandleMessage" style="width: 100%;">
+                    <DataAnnotationsValidator />
+
+                    <div class="form-group d-flex justify-content-between">
+                        <input type="text" class="form-control" placeholder="Type message here..." aria-label="Type message here..." aria-describedby="basic-addon2" @bind-value="messageBoxModel.Message" style="width: 100%;">
+                        <button type="button" class="btn btn-primary" onclick="document.getElementById('inputImg').click()"><i class="oi oi-data-transfer-upload"></i></button>
+                        <button type="submit" class="btn btn-primary"><span class="oi oi-arrow-circle-right"></span></button>
+                    </div>
+                 </EditForm>
+            </div>
+
+            <div id="messages">
+                @foreach (Message umsg in MessagesContainer.Groups[GroupId].Messages.Reverse<Message>())
                 {
-                    <span><b>[@umsg.Time] @(umsg.UserName):</b></span><br/>
-                    <a href="@(umsg.Msg)" target="_blank">
-                        <img alt="Loading image..." style="max-width: 50%; max-height: 50%;" src="@(umsg.Msg)"/><br/>
-                    </a>
+                    if (umsg.Msg.Contains("https://i.imgur.com/"))
+                    {
+                        <span><b>[@umsg.Time] @(umsg.UserName):</b></span><br/>
+                        <a href="@(umsg.Msg)" target="_blank">
+                            <img alt="Loading image..." style="max-width: 50%; max-height: 50%;" src="@(umsg.Msg)"/><br/>
+                        </a>
+                    }
+                    else if (IsValidUrl(umsg.Msg))
+                    {
+                        <span><b>[@umsg.Time] @(umsg.UserName):</b></span>
+                        <a href="@(umsg.Msg)">@(umsg.Msg)</a><br/>
+                    }
+                    else if (umsg.Msg == "DUCK")
+                    {
+                        <span><b>[@umsg.Time] @(umsg.UserName):</b></span><br/>
+                        <img alt="DUCK" style="max-width: 75px; max-height: 75px;" src="/favicon.ico"/><br/>
+                    }
+                    else
+                    {
+                        <span><b>[@umsg.Time] @(umsg.UserName):</b> @(umsg.Msg)</span><br/>
+                    }
                 }
-                else if (IsValidUrl(umsg.Msg))
-                {
-                    <span><b>[@umsg.Time] @(umsg.UserName):</b></span>
-                    <a href="@(umsg.Msg)">@(umsg.Msg)</a><br/>
-                }
-                else if (umsg.Msg == "DUCK")
-                {
-                    <span><b>[@umsg.Time] @(umsg.UserName):</b></span><br/>
-                    <img alt="DUCK" style="max-width: 75px; max-height: 75px;" src="/favicon.ico"/><br/>
-                }
-                else
-                {
-                    <span><b>[@umsg.Time] @(umsg.UserName):</b> @(umsg.Msg)</span><br/>
-                }
-            }
-        </div>
-    </div>   
-}
+            </div>
+        </div>   
+    }
 
 
-<InputFile id="inputImg" OnChange="@OnChange" @ref="inputImage" style="display:none;" accept=".gif,.jpg,.jpeg,.png" /> 
+    <InputFile id="inputImg" OnChange="@OnChange" @ref="inputImage" style="display:none;" accept=".gif,.jpg,.jpeg,.png" /> 
+</div>
 
 @code {
 
@@ -127,7 +129,7 @@ else
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (_dropZoneInstance == null && GroupId > -1)
+        if (firstRender)
         {
             _module = await _jsRuntime.InvokeAsync<IJSObjectReference>("import", "./dropZone.js");
             _dropZoneInstance = await _module.InvokeAsync<IJSObjectReference>("initializeFileDropZone", _dropZoneElement, inputImage.Element);
@@ -136,13 +138,12 @@ else
 
     async Task OnChange(InputFileChangeEventArgs e)
     {
+        if (CurrentUserName == null || GroupId == -1 || _Cookies.GetValueOrDefault($"gp-{GroupId}") != MessagesContainer.Groups[GroupId].Password) return;;
+        
         //FILE EXT: .png, .jpg, .jpeg, .gif only allowed
-        if (!(e.File.Name.Contains(".png") || e.File.Name.Contains(".jpg") || e.File.Name.Contains(".jpeg") || e.File.Name.Contains(".gif")))
-        {
-            return;
-        }
+        if (!(e.File.Name.Contains(".png") || e.File.Name.Contains(".jpg") || e.File.Name.Contains(".jpeg") || e.File.Name.Contains(".gif"))) return;
 
-        var handler = new HttpClientHandler();
+            var handler = new HttpClientHandler();
         handler.UseCookies = false;
 
         using (var httpClient = new HttpClient(handler))
