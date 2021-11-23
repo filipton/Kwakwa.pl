@@ -1,15 +1,34 @@
-﻿@page "/messenger"
-@inject IJSRuntime JSRuntime
+﻿@page "/messenger/{gid:int?}"
+@inject IJSRuntime _jsRuntime
+@inject IHttpContextAccessor _httpContextAccessor
+@inject NavigationManager _navManager
 @implements IAsyncDisposable
-@inject IHttpContextAccessor HttpContextAccessor
 
 @using KwakwaPl.Data
-@using Microsoft.AspNetCore.Components.Web
 @using System.Text.Json
+@using System.Text.RegularExpressions
+@using Microsoft.AspNetCore.Http
 
-@if (CurrentUserName == null)
+<div class="d-flex justify-content-between">
+    <button class="p-2 btn btn-primary" @onclick="() => SelectGroup()">GROUPS <span class="oi oi-arrow-thick-left"></span></button>
+    <button class="p-2 btn btn-primary">CREATE GROUP <span class="oi oi-plus"></span></button>
+</div>
+
+<br/>
+
+@if (GroupId == -1)
 {
-    <EditForm Model="@loginModel" OnValidSubmit="@HandleLogin" style="width: 100%;">
+    <h1>GROUPS:</h1>
+    foreach (MessageGroup group in MessagesContainer.Groups)
+    {
+        <button class="btn btn-primary" @onclick="() => SelectGroup(group.GroupName)">@(group.GroupName)</button>
+    }
+}
+else
+{
+    if (CurrentUserName == null)
+    {
+        <EditForm Model="@loginModel" OnValidSubmit="@HandleLogin" style="width: 100%;">
             <DataAnnotationsValidator />
 
             <div class="d-flex align-items-center justify-content-center">
@@ -18,88 +37,100 @@
                     <button type="submit" class="p-2 btn btn-primary" style="width: 100%;"><b>SET NICKNAME</b></button>
                 </div>
             </div>
-    </EditForm>
-}
-else if(CurrentGroup < 0)
-{
-    for (int i = 0; i < groups.Count; i++)
-    {
-        int t = i;
-        <button @onclick="() => SelectGroup(t)">@t</button>
+        </EditForm>
     }
+    else if (_Cookies.GetValueOrDefault($"gp-{GroupId}") != MessagesContainer.Groups[GroupId].Password)
+    {
+        <EditForm Model="@passwordModel" OnValidSubmit="@HandleGroupPassword" style="width: 100%;">
+            <DataAnnotationsValidator />
+    
+            <div class="d-flex align-items-center justify-content-center">
+                <div class="d-flex flex-column">
+                    <input type="text" class="p-2 form-control" placeholder="Enter Password" aria-label="Enter Password" aria-describedby="basic-addon2" @bind-value="passwordModel.Password" style="width: 100%;">
+                    <button type="submit" class="p-2 btn btn-primary" style="width: 100%;"><b>ENTER PASSWORD</b></button>
+                </div>
+            </div>
+        </EditForm>
+    }   
 }
 
-<div style="@((CurrentUserName == null || CurrentGroup < 0) ? "visibility: hidden;" : "")">
-    <div @ref="dropZoneElement" class="drop-zone input-group mb-3">
-          <EditForm Model="@messageBoxModel" OnValidSubmit="@HandleValidSubmit" style="width: 100%;">
-            <DataAnnotationsValidator />
+@if (GroupId > -1)
+{
+     <div style="@((CurrentUserName == null || _Cookies.GetValueOrDefault($"gp-{GroupId}") != MessagesContainer.Groups[GroupId].Password) ? "visibility: hidden;" : "")">
+        <div @ref="_dropZoneElement" class="drop-zone input-group mb-3">
+              <EditForm Model="@messageBoxModel" OnValidSubmit="@HandleMessage" style="width: 100%;">
+                <DataAnnotationsValidator />
 
-            <div class="form-group d-flex justify-content-between">
-                <input type="text" class="form-control" placeholder="Type message here..." aria-label="Type message here..." aria-describedby="basic-addon2" @bind-value="messageBoxModel.Message" style="width: 100%;">
-                <button type="button" class="btn btn-primary" onclick="document.getElementById('inputImg').click()"><i class="oi oi-data-transfer-upload"></i></button>
-                <button type="submit" class="btn btn-primary"><span class="oi oi-arrow-circle-right"></span></button>
-            </div>
-         </EditForm>
-    </div>
+                <div class="form-group d-flex justify-content-between">
+                    <input type="text" class="form-control" placeholder="Type message here..." aria-label="Type message here..." aria-describedby="basic-addon2" @bind-value="messageBoxModel.Message" style="width: 100%;">
+                    <button type="button" class="btn btn-primary" onclick="document.getElementById('inputImg').click()"><i class="oi oi-data-transfer-upload"></i></button>
+                    <button type="submit" class="btn btn-primary"><span class="oi oi-arrow-circle-right"></span></button>
+                </div>
+             </EditForm>
+        </div>
 
-    <div id="messages">
-        @if (CurrentGroup >= 0 && groups[CurrentGroup].Messages.Count > 0)
-        {
-            for(int m = groups[CurrentGroup].Messages.Count - 1; m > 0; m++)
+        <div id="messages">
+            @foreach (Message umsg in MessagesContainer.Groups[GroupId].Messages.Reverse<Message>())
             {
-                Message umsg = groups[CurrentGroup].Messages[m];
                 if (umsg.Msg.Contains("https://i.imgur.com/"))
                 {
-                    <span><b>[@umsg.Time] @(umsg.UserName):</b></span><br />
+                    <span><b>[@umsg.Time] @(umsg.UserName):</b></span><br/>
                     <a href="@(umsg.Msg)" target="_blank">
-                        <img style="max-width: 50%; max-height: 50%;" src="@(umsg.Msg)" /><br />
+                        <img alt="Loading image..." style="max-width: 50%; max-height: 50%;" src="@(umsg.Msg)"/><br/>
                     </a>
                 }
                 else if (IsValidUrl(umsg.Msg))
                 {
-                    <span><b>[@umsg.Time] @(umsg.UserName):</b></span> <a href="@(umsg.Msg)">@(umsg.Msg)</a><br />
+                    <span><b>[@umsg.Time] @(umsg.UserName):</b></span>
+                    <a href="@(umsg.Msg)">@(umsg.Msg)</a><br/>
                 }
                 else if (umsg.Msg == "DUCK")
                 {
-                    <span><b>[@umsg.Time] @(umsg.UserName):</b></span><br />
-                    <img style="max-width: 75px; max-height: 75px;" src="/favicon.ico" /><br />
+                    <span><b>[@umsg.Time] @(umsg.UserName):</b></span><br/>
+                    <img alt="DUCK" style="max-width: 75px; max-height: 75px;" src="/favicon.ico"/><br/>
                 }
                 else
                 {
-                    <span><b>[@umsg.Time] @(umsg.UserName):</b> @(umsg.Msg)</span><br />
+                    <span><b>[@umsg.Time] @(umsg.UserName):</b> @(umsg.Msg)</span><br/>
                 }
             }
-        }
-    </div>
-</div>
+        </div>
+    </div>   
+}
 
 
 <InputFile id="inputImg" OnChange="@OnChange" @ref="inputImage" style="display:none;" accept=".gif,.jpg,.jpeg,.png" /> 
 
 @code {
-    //https://www.meziantou.net/upload-files-with-drag-drop-or-paste-from-clipboard-in-blazor.htm
 
-    ElementReference dropZoneElement;
+    [Parameter]
+    public int? Gid { get; set; }
+
+    public int GroupId = -1;
+
+    
+    //https://www.meziantou.net/upload-files-with-drag-drop-or-paste-from-clipboard-in-blazor.htm
+    ElementReference _dropZoneElement;
     InputFile inputImage;
 
-    IJSObjectReference _module;
-    IJSObjectReference _dropZoneInstance;
+    IJSObjectReference? _module;
+    IJSObjectReference? _dropZoneInstance;
 
     private MessageBoxModel messageBoxModel = new();
     private LoginModel loginModel = new();
+    private PasswordModel passwordModel = new();
 
-    public static List<MessageGroup> groups = new List<MessageGroup>();
     public static List<Messenger> Instances = new List<Messenger>();
 
     public string CurrentUserName;
-    public int CurrentGroup = -1;
+    public Dictionary<string, string> _Cookies;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
+        if (_dropZoneInstance == null && GroupId > -1)
         {
-            _module = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./dropZone.js");
-            _dropZoneInstance = await _module.InvokeAsync<IJSObjectReference>("initializeFileDropZone", dropZoneElement, inputImage.Element);
+            _module = await _jsRuntime.InvokeAsync<IJSObjectReference>("import", "./dropZone.js");
+            _dropZoneInstance = await _module.InvokeAsync<IJSObjectReference>("initializeFileDropZone", _dropZoneElement, inputImage.Element);
         }
     }
 
@@ -124,41 +155,50 @@ else if(CurrentGroup < 0)
                 var response = await httpClient.SendAsync(request);
                 ImgurJSON? imgJson = await JsonSerializer.DeserializeAsync<ImgurJSON>(await response.Content.ReadAsStreamAsync());
                 //imgSrc = imgJson.data.link;
-                AddMessage(CurrentGroup, CurrentUserName, imgJson.data.link);
+                AddMessage(GroupId, CurrentUserName, imgJson.data.link);
             }
         }
     }
 
-    void SelectGroup(int gId)
+    private async Task SelectGroup(string? group = null)
     {
-        CurrentGroup = gId;
-        Console.WriteLine(CurrentGroup);
-
-        InvokeAsync(StateHasChanged);
+        if (group == null)
+        {
+            GroupId = -1;
+            _navManager.NavigateTo($"/messenger");
+        }
+        else
+        {
+            int groupid = MessagesContainer.Groups.FindIndex(x => x.GroupName == group);
+            GroupId = groupid;
+            _navManager.NavigateTo($"/messenger/{groupid}");
+        }
     }
-
-    private void HandleValidSubmit()
+    
+    private void HandleMessage()
     {
-        AddMessage(CurrentGroup, CurrentUserName, messageBoxModel.Message);
-
+        AddMessage(GroupId, CurrentUserName, messageBoxModel.Message);
         messageBoxModel.Message = "";
 
         InvokeAsync(StateHasChanged);
     }
-    private void HandleLogin()
+    private async Task HandleLogin()
     {
         CurrentUserName = loginModel.UserName;
+        await WriteCookieAsync("nick", CurrentUserName, 365);
+        StateHasChanged();
+    }
 
-        InvokeAsync(() =>
-        {
-            StateHasChanged();
-            WriteCookieAsync("nick", CurrentUserName, 365);
-        });
+    private async Task HandleGroupPassword()
+    {
+        _Cookies[$"gp-{GroupId}"] = passwordModel.Password;
+        await WriteCookieAsync($"gp-{Gid}", passwordModel.Password, 365);
+        StateHasChanged();
     }
 
     public static void AddMessage(int group, string username, string msg)
     {
-        groups[group].AddMessage(username, msg);
+        MessagesContainer.Groups[group].AddMessage(username, msg);
 
         foreach (Messenger messenger in Instances)
         {
@@ -168,19 +208,16 @@ else if(CurrentGroup < 0)
 
     protected override async Task OnInitializedAsync()
     {
-        if(groups.Count == 0)
-        {
-            groups.Add(new MessageGroup() { GroupName = "Global", Messages = new List<Message>() });
-        }
-
+        GroupId = Gid ?? -1;
+        
         Instances.Add(this);
-        CurrentUserName = HttpContextAccessor.HttpContext.Request.Cookies["nick"];
-        //CurrentUserName = $"Duck-{new Random().Next(0, 10000)}";
+        _Cookies = _httpContextAccessor.HttpContext.Request.Cookies.ToDictionary(item => item.Key, item => item.Value);
+        CurrentUserName = _httpContextAccessor.HttpContext.Request.Cookies["nick"];
     }
 
-    public async Task WriteCookieAsync(string name, string value, int days)
+    async Task WriteCookieAsync(string name, string value, int days)
     {
-        var test = await JSRuntime.InvokeAsync<object>("blazorExtensions.WriteCookie", name, value, days);
+        var test = await _jsRuntime.InvokeAsync<object>("blazorExtensions.WriteCookie", name, value, days);
     }
 
     public async ValueTask DisposeAsync()
@@ -195,8 +232,7 @@ else if(CurrentGroup < 0)
 
     public static bool IsValidUrl(string url)
     {
-        Uri uriResult;
-        bool result = Uri.TryCreate(url, UriKind.Absolute, out uriResult) && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
+        bool result = Uri.TryCreate(url, UriKind.Absolute, out Uri? uriResult) && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
         return result;
     }
 }

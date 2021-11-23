@@ -1,13 +1,16 @@
 ﻿@page "/"
+@using KwakwaPl.Data
+@inject NavigationManager NavManager
 
-<h1>Hello, world!</h1>
+@if (true)
+{
+    NavManager.NavigateTo($"/messenger");
+}
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam in justo risus. Pellentesque nec dignissim erat, sed molestie erat. Quisque congue tempus risus, vitae dapibus justo. In imperdiet purus lorem, sit amet tempor eros mollis eget. Aenean porttitor tortor ac felis pretium, ac tincidunt felis pulvinar. Suspendisse molestie purus est, consequat finibus elit sagittis quis. Aliquam erat volutpat. Vestibulum sed commodo massa.
+@code{
 
-Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Sed nulla libero, laoreet in faucibus eu, euismod ac augue. Sed ac ipsum tristique, pharetra elit nec, malesuada felis. Maecenas hendrerit vel mi vel aliquet. Mauris est lorem, tempus ut venenatis ac, laoreet id tellus. Proin fermentum, libero eu rutrum mollis, nisl urna laoreet quam, sit amet pulvinar enim velit quis nisl. In in ante sed velit congue posuere. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec sed leo dictum, suscipit lectus id, dapibus lectus. Nam consectetur pulvinar tortor, id pellentesque massa viverra at. Fusce sagittis dui est, eu pulvinar odio sodales non. Aliquam egestas mi dictum cursus mollis. Vivamus vel urna diam. Morbi congue eleifend sapien sit amet commodo.
-
-Donec mauris nunc, venenatis ut elementum sit amet, vestibulum nec enim. Duis dignissim arcu orci, sit amet pulvinar ipsum condimentum a. Nulla tempus placerat molestie. Donec condimentum turpis at commodo tempor. Cras lectus dui, pretium venenatis metus eu, tristique tempor est. Duis efficitur, nisl nec dignissim interdum, metus nisi dapibus risus, eu iaculis mauris lorem vitae libero. Maecenas augue purus, commodo non mi eu, tincidunt vulputate libero. Nam condimentum ligula at vehicula scelerisque. Suspendisse eget dolor metus. Nulla facilisi. In sem ante, fermentum id lobortis ac, mattis ut odio.
-
-Cras efficitur lorem mollis lacus ornare sollicitudin a aliquam libero. Vivamus imperdiet lacus in elit auctor lacinia vel a ex. Phasellus sodales gravida elementum. Sed aliquet mi ex, ut congue augue rutrum a. Ut porta urna tortor, sed vestibulum mi facilisis eu. In nisl justo, blandit non venenatis vel, faucibus nec ipsum. Vestibulum a risus nec lorem sollicitudin rutrum. Nam sed magna volutpat, tempor tortor quis, pharetra mauris. Phasellus suscipit viverra dui eget vulputate. Donec tincidunt, quam non convallis tempus, odio mauris feugiat nisi, quis finibus sapien sapien in mauris. Duis vitae condimentum felis, ac tristique risus. Cras ante velit, hendrerit nec laoreet at, rutrum id dolor.
-
-Nullam dapibus consectetur magna, in dignissim urna finibus a. Sed accumsan interdum interdum. Fusce auctor justo tristique, scelerisque justo suscipit, accumsan ante. Donec cursus tincidunt vehicula. Vivamus euismod tristique gravida. Morbi scelerisque, odio quis placerat porttitor, justo tortor gravida tellus, in viverra turpis diam et massa. Donec vel lectus vitae justo placerat auctor nec id nulla.
+    public void OnGroupSelect(string gname)
+    {
+        
+    }
+}
