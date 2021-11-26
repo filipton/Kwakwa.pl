@@ -1,7 +1,8 @@
-﻿@page "/messenger/{gid:int?}"
+﻿@page "/messenger/{gid:int}"
 @inject IJSRuntime _jsRuntime
 @inject IHttpContextAccessor _httpContextAccessor
 @inject NavigationManager _navManager
+@inject UserState _userState
 @implements IAsyncDisposable
 
 @using KwakwaPl.Data
@@ -9,53 +10,37 @@
 @using System.Text.RegularExpressions
 @using Microsoft.AspNetCore.Http
 
-<div class="d-flex justify-content-between">
-    <button class="p-2 btn btn-primary" @onclick="() => SelectGroup()">GROUPS <span class="oi oi-arrow-thick-left"></span></button>
-    <button class="p-2 btn btn-primary">CREATE GROUP <span class="oi oi-plus"></span></button>
-</div>
-
-<br/>
-
 <div @ref="_dropZoneElement" class="drop-zone">
-    @if (GroupId == -1)
-    {
-        <h1>GROUPS:</h1>
-        foreach (MessageGroup group in MessagesContainer.Groups)
-        {
-            <button class="btn btn-primary" @onclick="() => SelectGroup(group.GroupName)">@(group.GroupName)</button>
-        }
-    }
-    else
-    {
-        if (CurrentUserName == null)
-        {
-            <EditForm Model="@loginModel" OnValidSubmit="@HandleLogin" style="width: 100%;">
-                <DataAnnotationsValidator />
+    <h1>@MessagesContainer.Groups[Gid].GroupName: </h1>
 
-                <div class="d-flex align-items-center justify-content-center">
-                    <div class="d-flex flex-column">
-                        <input type="text" class="p-2 form-control" placeholder="Enter Nickname" aria-label="Enter Nickname" aria-describedby="basic-addon2" @bind-value="loginModel.UserName" style="width: 100%;">
-                        <button type="submit" class="p-2 btn btn-primary" style="width: 100%;"><b>SET NICKNAME</b></button>
-                    </div>
+    @if (!_userState.IsLoggedIn)
+    {
+        <EditForm Model="@loginModel" OnValidSubmit="@HandleLogin" style="width: 100%;">
+            <DataAnnotationsValidator />
+
+            <div class="d-flex align-items-center justify-content-center">
+                <div class="d-flex flex-column">
+                    <input type="text" class="p-2 form-control" placeholder="Enter Nickname" aria-label="Enter Nickname" aria-describedby="basic-addon2" @bind-value="loginModel.UserName" style="width: 100%;">
+                    <button type="submit" class="p-2 btn btn-primary" style="width: 100%;"><b>SET NICKNAME</b></button>
                 </div>
-            </EditForm>
-        }
-        else if (_Cookies.GetValueOrDefault($"gp-{GroupId}") != MessagesContainer.Groups[GroupId].Password)
-        {
-            <EditForm Model="@passwordModel" OnValidSubmit="@HandleGroupPassword" style="width: 100%;">
-                <DataAnnotationsValidator />
+            </div>
+        </EditForm>
+    }
+    else if (!_userState.IsAuthorizedToGroup(Gid))
+    {
+        <EditForm Model="@passwordModel" OnValidSubmit="@HandleGroupPassword" style="width: 100%;">
+            <DataAnnotationsValidator />
         
-                <div class="d-flex align-items-center justify-content-center">
-                    <div class="d-flex flex-column">
-                        <input type="text" class="p-2 form-control" placeholder="Enter Password" aria-label="Enter Password" aria-describedby="basic-addon2" @bind-value="passwordModel.Password" style="width: 100%;">
-                        <button type="submit" class="p-2 btn btn-primary" style="width: 100%;"><b>ENTER PASSWORD</b></button>
-                    </div>
+            <div class="d-flex align-items-center justify-content-center">
+                <div class="d-flex flex-column">
+                    <input type="text" class="p-2 form-control" placeholder="Enter Password" aria-label="Enter Password" aria-describedby="basic-addon2" @bind-value="passwordModel.Password" style="width: 100%;">
+                    <button type="submit" class="p-2 btn btn-primary" style="width: 100%;"><b>ENTER PASSWORD</b></button>
                 </div>
-            </EditForm>
-        }   
+            </div>
+        </EditForm>
     }
 
-    @if (CurrentUserName != null && GroupId > -1 && _Cookies.GetValueOrDefault($"gp-{GroupId}") == MessagesContainer.Groups[GroupId].Password)
+    @if (_userState.IsLoggedIn && _userState.IsAuthorizedToGroup(Gid))
     {
          <div>
             <div class="input-group mb-3">
@@ -71,7 +56,7 @@
             </div>
 
             <div id="messages">
-                @foreach (Message umsg in MessagesContainer.Groups[GroupId].Messages.Reverse<Message>())
+                @foreach (Message umsg in MessagesContainer.Groups[Gid].Messages.Reverse<Message>())
                 {
                     if (umsg.Msg.Contains("https://i.imgur.com/"))
                     {
@@ -106,11 +91,8 @@
 @code {
 
     [Parameter]
-    public int? Gid { get; set; }
+    public int Gid { get; set; }
 
-    public int GroupId = -1;
-
-    
     //https://www.meziantou.net/upload-files-with-drag-drop-or-paste-from-clipboard-in-blazor.htm
     ElementReference _dropZoneElement;
     InputFile inputImage;
@@ -124,9 +106,6 @@
 
     public static List<Messenger> Instances = new List<Messenger>();
 
-    public string CurrentUserName;
-    public Dictionary<string, string> _Cookies;
-
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -136,9 +115,10 @@
         }
     }
 
-    async Task OnChange(InputFileChangeEventArgs e)
+    //On Image Upload
+    public async Task OnChange(InputFileChangeEventArgs e)
     {
-        if (CurrentUserName == null || GroupId == -1 || _Cookies.GetValueOrDefault($"gp-{GroupId}") != MessagesContainer.Groups[GroupId].Password) return;;
+        if (!_userState.IsLoggedIn || !_userState.IsAuthorizedToGroup(Gid)) return;;
         
         //FILE EXT: .png, .jpg, .jpeg, .gif only allowed
         if (!(e.File.Name.Contains(".png") || e.File.Name.Contains(".jpg") || e.File.Name.Contains(".jpeg") || e.File.Name.Contains(".gif"))) return;
@@ -155,83 +135,92 @@
                 request.Content = new StreamContent(e.File.OpenReadStream(10485760));
                 var response = await httpClient.SendAsync(request);
                 ImgurJSON? imgJson = await JsonSerializer.DeserializeAsync<ImgurJSON>(await response.Content.ReadAsStreamAsync());
-                //imgSrc = imgJson.data.link;
-                AddMessage(GroupId, CurrentUserName, imgJson.data.link);
+                AddMessage(imgJson.data.link);
             }
         }
     }
 
-    private async Task SelectGroup(string? group = null)
+    public void AddMessage(string msg)
     {
-        if (group == null)
-        {
-            GroupId = -1;
-            _navManager.NavigateTo($"/messenger");
-        }
-        else
-        {
-            int groupid = MessagesContainer.Groups.FindIndex(x => x.GroupName == group);
-            GroupId = groupid;
-            _navManager.NavigateTo($"/messenger/{groupid}");
-        }
-    }
-    
-    private void HandleMessage()
-    {
-        AddMessage(GroupId, CurrentUserName, messageBoxModel.Message);
-        messageBoxModel.Message = "";
-
-        InvokeAsync(StateHasChanged);
-    }
-    private async Task HandleLogin()
-    {
-        CurrentUserName = loginModel.UserName;
-        await WriteCookieAsync("nick", CurrentUserName, 365);
-        StateHasChanged();
-    }
-
-    private async Task HandleGroupPassword()
-    {
-        _Cookies[$"gp-{GroupId}"] = passwordModel.Password;
-        await WriteCookieAsync($"gp-{Gid}", passwordModel.Password, 365);
-        StateHasChanged();
-    }
-
-    public static void AddMessage(int group, string username, string msg)
-    {
-        MessagesContainer.Groups[group].AddMessage(username, msg);
+        MessagesContainer.Groups[Gid].AddMessage(_userState.UserName, msg);
 
         foreach (Messenger messenger in Instances)
         {
             messenger.Refresh();
         }
     }
+    
+    #region InputHandlers
+    //Message Handler
+    private void HandleMessage()
+    {
+        AddMessage(messageBoxModel.Message);
+        messageBoxModel.Message = "";
 
+        InvokeAsync(StateHasChanged);
+    }
+    
+    //Login Handler (Set Nickname)
+    private async Task HandleLogin()
+    {
+        _userState.UserName = loginModel.UserName;
+        if (!string.IsNullOrWhiteSpace(_userState.UserName))
+        {
+            _userState.IsLoggedIn = true;
+            await WriteCookieAsync("nick", _userState.UserName, 365);
+        }
+        StateHasChanged();
+    }
+    
+    //Password Handler
+    private async Task HandleGroupPassword()
+    {
+        if (MessagesContainer.Groups[Gid].Password == passwordModel.Password)
+        {
+            _userState.GroupPasswords[Gid] = passwordModel.Password;
+            await WriteCookieAsync($"gp-{Gid}", passwordModel.Password, 365);
+            StateHasChanged();   
+        }
+    }
+    #endregion
+
+    #region OnInitialized and OnDispose
     protected override async Task OnInitializedAsync()
     {
-        GroupId = Gid ?? -1;
-        
         Instances.Add(this);
-        _Cookies = _httpContextAccessor.HttpContext.Request.Cookies.ToDictionary(item => item.Key, item => item.Value);
-        CurrentUserName = _httpContextAccessor.HttpContext.Request.Cookies["nick"];
-    }
 
-    async Task WriteCookieAsync(string name, string value, int days)
-    {
-        var test = await _jsRuntime.InvokeAsync<object>("blazorExtensions.WriteCookie", name, value, days);
-    }
+        if (!_userState.IsLoggedIn)
+        {
+            _userState.UserName = _httpContextAccessor.HttpContext.Request.Cookies["nick"];
+            foreach (var cookie in _httpContextAccessor.HttpContext.Request.Cookies)
+            {
+                if (cookie.Key.StartsWith("gp-"))
+                {
+                    int gpid = int.Parse(cookie.Key.Replace("gp-", ""));
+                    if (!_userState.GroupPasswords.ContainsKey(gpid)) _userState.GroupPasswords[gpid] = cookie.Value;
+                }
+            }
+        }
 
+        if (!string.IsNullOrWhiteSpace(_userState.UserName)) _userState.IsLoggedIn = true;
+    }
     public async ValueTask DisposeAsync()
     {
         Instances.Remove(this);
     }
+    #endregion
 
+    //USEFUL STUFF
     public void Refresh()
     {
         InvokeAsync(StateHasChanged);
     }
-
-    public static bool IsValidUrl(string url)
+    
+    public async Task WriteCookieAsync(string name, string value, int days)
+    {
+        var test = await _jsRuntime.InvokeAsync<object>("blazorExtensions.WriteCookie", name, value, days);
+    }
+    public bool IsValidUrl(string url)
     {
         bool result = Uri.TryCreate(url, UriKind.Absolute, out Uri? uriResult) && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
         return result;

@@ -1,16 +1,19 @@
 ﻿@page "/"
 @using KwakwaPl.Data
-@inject NavigationManager NavManager
+@inject NavigationManager _navManager
 
-@if (true)
+<h1>GROUPS:</h1>
+@foreach (MessageGroup group in MessagesContainer.Groups)
 {
-    NavManager.NavigateTo($"/messenger");
+    <button class="btn btn-primary" @onclick="() => SelectGroup(group.GroupName)">
+        @(group.GroupName) <span class='oi @(group.PasswordSecured ? "oi-lock-locked" : "oi-lock-unlocked")' title='@(group.PasswordSecured ? "LOCKED" : "UNLOCKED")'></span>
+    </button> <br />
 }
 
-@code{
-
-    public void OnGroupSelect(string gname)
+@code {
+    private async Task SelectGroup(string group = null)
     {
-        
+        int groupid = MessagesContainer.Groups.FindIndex(x => x.GroupName == group);
+        _navManager.NavigateTo($"/messenger/{groupid}");
     }
 }

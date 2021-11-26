@@ -66,6 +66,18 @@
         <a class="dismiss">🗙</a>
     </div>
 
-    <script src="_framework/blazor.server.js"></script>
+<script src="_framework/blazor.server.js"></script>
+
+<!--
+<script src="_framework/blazor.server.js" autostart="false"></script>
+
+<script>
+    Blazor.start({
+        reconnectionHandler: function(d) {
+                                     document.location.reload(); 
+                                },
+    });
+</script>
+-->
 </body>
 </html>

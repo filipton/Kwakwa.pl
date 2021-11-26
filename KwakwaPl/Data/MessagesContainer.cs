@@ -2,12 +2,13 @@
 
 namespace KwakwaPl.Data
 {
-    public class MessagesContainer
+    public static class MessagesContainer
     {
         public static List<MessageGroup> Groups = new List<MessageGroup>()
         {
             new MessageGroup() { GroupName = "Global", Messages = new List<Message>() },
-            new MessageGroup() { GroupName = "Restricted", Messages = new List<Message>(), Password = "kwakwa5.pl" }
+            new MessageGroup() { GroupName = "Restricted", Messages = new List<Message>(), Password = "kwakwa5.pl", PasswordSecured = true},
+            new MessageGroup() { GroupName = "Test", Messages = new List<Message>(), Password = "Test123+", PasswordSecured = true}
         };
     }
 }

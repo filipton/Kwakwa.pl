@@ -3,6 +3,8 @@ using System.Collections.Generic;
 
 namespace KwakwaPl.Data
 {
+	//TODO: Add bool for one time passwords (without cookies saving)
+	
 	public struct MessageGroup
 	{
 		public string GroupName;
