@@ -55,7 +55,7 @@
                  </EditForm>
             </div>
 
-            <div id="messages">
+            <div class="text-break" id="messages">
                 @foreach (Message umsg in MessagesContainer.Groups[Gid].Messages.Reverse<Message>())
                 {
                     if (umsg.Msg.Contains("https://i.imgur.com/"))
@@ -152,7 +152,7 @@
     
     #region InputHandlers
     //Message Handler
-    private void HandleMessage()
+    private async Task HandleMessage()
     {
         AddMessage(messageBoxModel.Message);
         messageBoxModel.Message = "";
@@ -178,7 +178,7 @@
         if (MessagesContainer.Groups[Gid].Password == passwordModel.Password)
         {
             _userState.GroupPasswords[Gid] = passwordModel.Password;
-            await WriteCookieAsync($"gp-{Gid}", passwordModel.Password, 365);
+            if(!MessagesContainer.Groups[Gid].OneTimePassword) await WriteCookieAsync($"gp-{Gid}", passwordModel.Password, 365);
             StateHasChanged();   
         }
     }

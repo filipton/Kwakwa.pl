@@ -1,6 +1,48 @@
 ﻿@page "/gcreate"
-<h1>NOTHING HERE...</h1>
+@using KwakwaPl.Data
+
+<h1>Create New Group</h1>
+
+<EditForm Model="@createGroupModel" OnValidSubmit="@HandleCreateGroupModel" style="width: 100%;">
+    <DataAnnotationsValidator />
+
+    <div class="d-flex align-items-center justify-content-center">
+        <div class="d-flex flex-column">
+            <input type="text" class="p-2 form-control" placeholder="Enter GroupName" @bind-value="createGroupModel.GroupName" style="width: 100%;">
+            <input type="text" class="p-2 form-control" placeholder="Enter Password" disabled="@(!createGroupModel.PasswordSecured)" @bind-value="createGroupModel.Password" style="width: 100%;">
+
+            <label title="If its checked group is password secured." class="checkbox">
+                <input type="checkbox" @bind-value="createGroupModel.PasswordSecured"> Password Secured
+            </label>
+
+            <label title="If its checked password won't save in cookies, so after refresh you must type password again." class="checkbox">
+                <input type="checkbox" @bind-value="createGroupModel.OneTimePassword"> One Time Password
+            </label>
+
+            <input type="text" class="p-2 form-control" placeholder="(TEMP) Enter Master Password" @bind-value="TempPassword" style="width: 100%;">
+
+            <button type="submit" class="p-2 btn btn-primary" style="width: 100%;"><b>CREATE GROUP</b></button>
+        </div>
+    </div>
+</EditForm>
 
 @code {
-    
+    private CreateGroupModel createGroupModel = new();
+
+    public string TempPassword;
+
+    private async Task HandleCreateGroupModel()
+    {
+        if (TempPassword == "Test321" && MessagesContainer.Groups.FindIndex(x => x.GroupName == createGroupModel.GroupName) < 0)
+        {
+            MessagesContainer.Groups.Add(new MessageGroup()
+            {
+                GroupName = createGroupModel.GroupName,
+                Messages = new List<Message>(),
+                OneTimePassword = createGroupModel.OneTimePassword,
+                Password = createGroupModel.Password,
+                PasswordSecured = createGroupModel.PasswordSecured
+            });
+        }
+    }
 }

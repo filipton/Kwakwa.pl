@@ -10,6 +10,7 @@ namespace KwakwaPl.Data
 		public string GroupName;
 		public string Password;
 		public bool PasswordSecured;
+		public bool OneTimePassword;
 		public List<Message> Messages;
 
 		public void AddMessage(string username, string msg)
