@@ -1,5 +1,6 @@
 ﻿@page "/gcreate"
 @using KwakwaPl.Data
+@inject NavigationManager _navManager
 
 <h1>Create New Group</h1>
 
@@ -19,7 +20,7 @@
                 <input type="checkbox" @bind-value="createGroupModel.OneTimePassword"> One Time Password
             </label>
 
-            <input type="text" class="p-2 form-control" placeholder="(TEMP) Enter Master Password" @bind-value="TempPassword" style="width: 100%;">
+            <input type="password" class="p-2 form-control" placeholder="(TEMP) Enter Master Password" @bind-value="TempPassword" style="width: 100%;">
 
             <button type="submit" class="p-2 btn btn-primary" style="width: 100%;"><b>CREATE GROUP</b></button>
         </div>
@@ -33,7 +34,7 @@
 
     private async Task HandleCreateGroupModel()
     {
-        if (TempPassword == "Test321" && MessagesContainer.Groups.FindIndex(x => x.GroupName == createGroupModel.GroupName) < 0)
+        if (TempPassword == Environment.GetEnvironmentVariable("MASTER_PASSWD") && MessagesContainer.Groups.FindIndex(x => x.GroupName == createGroupModel.GroupName) < 0)
         {
             MessagesContainer.Groups.Add(new MessageGroup()
             {
@@ -45,6 +46,7 @@
             });
 
             await NpgsqlConnect.ExecuteCommandWithoutReturn($"INSERT INTO MessagesGroups (name, password, passwordSecured, oneTimePassword) values ('{createGroupModel.GroupName}', '{createGroupModel.Password}', {createGroupModel.PasswordSecured}, {createGroupModel.OneTimePassword});");
+            _navManager.NavigateTo("/");
         }
     }
 }

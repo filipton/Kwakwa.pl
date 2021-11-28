@@ -65,7 +65,7 @@ namespace KwakwaPl.Data
         public static string GetConnectionString()
         {
             //IN PRODUCTION REMOVE STRING AFTER ??
-            var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL") ?? "postgres://ibsbbkwoetewcs:a5f645b39e6d01691656e33ffc19d312744ea92c7adaa664f1bffd644a93a556@ec2-54-228-139-34.eu-west-1.compute.amazonaws.com:5432/dcm9heen6kfh08";
+            var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
             var databaseUri = new Uri(databaseUrl);
             var userInfo = databaseUri.UserInfo.Split(':');
 

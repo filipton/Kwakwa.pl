@@ -1,0 +1,57 @@
+﻿@page "/gmanager"
+@using KwakwaPl.Data
+
+<h1>GROUP MANAGER: </h1>
+
+@if (Authorized)
+{
+    foreach (MessageGroup group in MessagesContainer.Groups)
+    {
+        <span style="font-size: large; font-weight: bold; white-space: pre; font-family: monospace;">@group.GroupName.PadRight(16, ' ')</span> 
+        <button class="btn btn-primary" @onclick="() => ClearButton(group.GroupName)">CLEAR</button>
+        <button class="btn btn-secondary" @onclick="() => DeleteButton(group.GroupName)">REMOVE</button>
+        <br />
+    }
+}
+else
+{
+    <input type="password" placeholder="Enter Password..." @bind-value="TmpPassword">
+    <button class="btn btn-secondary" @onclick="ConfirmButton">CONFIRM</button>
+}
+
+@code
+{
+    //AUTHORIZATION
+    public bool Authorized = false;
+    public string TmpPassword = "";
+
+    public async Task ConfirmButton()
+    {
+        if (TmpPassword == Environment.GetEnvironmentVariable("MASTER_PASSWD"))
+        {
+            Authorized = true;
+            StateHasChanged();
+        }
+    }
+
+
+    public async Task ClearButton(string gname)
+    {
+        int index = MessagesContainer.Groups.FindIndex(x => x.GroupName == gname);
+        if (index > -1)
+        {
+            MessagesContainer.Groups[index].ClearMessages();
+            await NpgsqlConnect.ExecuteCommandWithoutReturn($"UPDATE MessagesGroups SET messagesJson = '' WHERE name = '{gname}';");
+        }
+    }
+
+    public async Task DeleteButton(string gname)
+    {
+        int index = MessagesContainer.Groups.FindIndex(x => x.GroupName == gname);
+        if (index > -1)
+        {
+            MessagesContainer.Groups.RemoveAt(index);
+            await NpgsqlConnect.ExecuteCommandWithoutReturn($"DELETE FROM MessagesGroups WHERE name = '{gname}';");
+        }
+    }
+}

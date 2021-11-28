@@ -16,9 +16,14 @@ namespace KwakwaPl.Data
 		public bool OneTimePassword;
 		public List<Message> Messages;
 
-		public async Task AddMessage(string username, string msg)
+		public void AddMessage(string username, string msg)
 		{
 			Messages.Add(new Message() { Msg = msg, UserName = username, Time = DateTime.UtcNow.AddHours(1) });
+		}
+
+		public void ClearMessages()
+		{
+			Messages.Clear();
 		}
 	}
 	
