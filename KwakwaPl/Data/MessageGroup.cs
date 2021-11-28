@@ -1,5 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
+using System.Threading.Tasks;
+using Newtonsoft.Json;
 
 namespace KwakwaPl.Data
 {
@@ -13,7 +16,7 @@ namespace KwakwaPl.Data
 		public bool OneTimePassword;
 		public List<Message> Messages;
 
-		public void AddMessage(string username, string msg)
+		public async Task AddMessage(string username, string msg)
 		{
 			Messages.Add(new Message() { Msg = msg, UserName = username, Time = DateTime.UtcNow.AddHours(1) });
 		}

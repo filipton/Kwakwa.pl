@@ -135,14 +135,14 @@
                 request.Content = new StreamContent(e.File.OpenReadStream(10485760));
                 var response = await httpClient.SendAsync(request);
                 ImgurJSON? imgJson = await JsonSerializer.DeserializeAsync<ImgurJSON>(await response.Content.ReadAsStreamAsync());
-                AddMessage(imgJson.data.link);
+                await AddMessage(imgJson.data.link);
             }
         }
     }
 
-    public void AddMessage(string msg)
+    public async Task AddMessage(string msg)
     {
-        MessagesContainer.Groups[Gid].AddMessage(_userState.UserName, msg);
+        await MessagesContainer.Groups[Gid].AddMessage(_userState.UserName, msg);
 
         foreach (Messenger messenger in Instances)
         {
@@ -154,7 +154,7 @@
     //Message Handler
     private async Task HandleMessage()
     {
-        AddMessage(messageBoxModel.Message);
+        await AddMessage(messageBoxModel.Message);
         messageBoxModel.Message = "";
 
         InvokeAsync(StateHasChanged);

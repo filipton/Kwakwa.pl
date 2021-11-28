@@ -43,6 +43,8 @@
                 Password = createGroupModel.Password,
                 PasswordSecured = createGroupModel.PasswordSecured
             });
+
+            await NpgsqlConnect.ExecuteCommandWithoutReturn($"INSERT INTO MessagesGroups (name, password, passwordSecured, oneTimePassword) values ('{createGroupModel.GroupName}', '{createGroupModel.Password}', {createGroupModel.PasswordSecured}, {createGroupModel.OneTimePassword});");
         }
     }
 }
