@@ -3,10 +3,10 @@
 @inject NavigationManager _navManager
 
 <h1>GROUPS:</h1>
-@foreach (MessageGroup group in MessagesContainer.Groups)
+@foreach (Group group in MessagesContainer.Groups)
 {
     <button class="btn btn-primary" @onclick="() => SelectGroup(group.GroupName)">
-        @(group.GroupName) <span class='oi @(group.PasswordSecured ? "oi-lock-locked" : "oi-lock-unlocked")' title='@(group.PasswordSecured ? "LOCKED" : "UNLOCKED")'></span>
+        @(group.GroupName) <span class='oi @(!string.IsNullOrWhiteSpace(group.Password) ? "oi-lock-locked" : "oi-lock-unlocked")' title='@(!string.IsNullOrWhiteSpace(group.Password) ? "LOCKED" : "UNLOCKED")'></span>
     </button> <br />
 }
 
@@ -14,6 +14,6 @@
     private async Task SelectGroup(string group = null)
     {
         int groupid = MessagesContainer.Groups.FindIndex(x => x.GroupName == group);
-        _navManager.NavigateTo($"/messenger/{groupid}");
+        _navManager.NavigateTo($"/messenger/{MessagesContainer.Groups[groupid].Id}");
     }
 }

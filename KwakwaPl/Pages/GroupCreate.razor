@@ -10,11 +10,7 @@
     <div class="d-flex align-items-center justify-content-center">
         <div class="d-flex flex-column">
             <input type="text" class="p-2 form-control" placeholder="Enter GroupName" @bind-value="createGroupModel.GroupName" style="width: 100%;">
-            <input type="text" class="p-2 form-control" placeholder="Enter Password" disabled="@(!createGroupModel.PasswordSecured)" @bind-value="createGroupModel.Password" style="width: 100%;">
-
-            <label title="If its checked group is password secured." class="checkbox">
-                <input type="checkbox" @bind-value="createGroupModel.PasswordSecured"> Password Secured
-            </label>
+            <input type="text" class="p-2 form-control" placeholder="Enter Password" @bind-value="createGroupModel.Password" style="width: 100%;">
 
             <label title="If its checked password won't save in cookies, so after refresh you must type password again." class="checkbox">
                 <input type="checkbox" @bind-value="createGroupModel.OneTimePassword"> One Time Password
@@ -36,16 +32,17 @@
     {
         if (TempPassword == Environment.GetEnvironmentVariable("MASTER_PASSWD") && MessagesContainer.Groups.FindIndex(x => x.GroupName == createGroupModel.GroupName) < 0)
         {
-            MessagesContainer.Groups.Add(new MessageGroup()
+            Group tmpGroup = new Group()
             {
                 GroupName = createGroupModel.GroupName,
-                Messages = new List<Message>(),
-                OneTimePassword = createGroupModel.OneTimePassword,
                 Password = createGroupModel.Password,
-                PasswordSecured = createGroupModel.PasswordSecured
-            });
+                OneTimePassword = createGroupModel.OneTimePassword
+            };
+            
+            tmpGroup.Id = await DBConnect.ExecuteCommandAndReturnId($"INSERT INTO Groups (name, password, oneTimePswd) values ('{tmpGroup.GroupName}', '{tmpGroup.Password}', {tmpGroup.OneTimePassword});");
 
-            await NpgsqlConnect.ExecuteCommandWithoutReturn($"INSERT INTO MessagesGroups (name, password, passwordSecured, oneTimePassword) values ('{createGroupModel.GroupName}', '{createGroupModel.Password}', {createGroupModel.PasswordSecured}, {createGroupModel.OneTimePassword});");
+            MessagesContainer.Groups.Add(tmpGroup);
+            
             _navManager.NavigateTo("/");
         }
     }

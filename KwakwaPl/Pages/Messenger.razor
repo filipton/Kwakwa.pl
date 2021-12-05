@@ -16,7 +16,7 @@
     @if (!_userState.IsLoggedIn)
     {
         <EditForm Model="@loginModel" OnValidSubmit="@HandleLogin" style="width: 100%;">
-            <DataAnnotationsValidator />
+            <DataAnnotationsValidator/>
 
             <div class="d-flex align-items-center justify-content-center">
                 <div class="d-flex flex-column">
@@ -29,8 +29,8 @@
     else if (!_userState.IsAuthorizedToGroup(Gid))
     {
         <EditForm Model="@passwordModel" OnValidSubmit="@HandleGroupPassword" style="width: 100%;">
-            <DataAnnotationsValidator />
-        
+            <DataAnnotationsValidator/>
+
             <div class="d-flex align-items-center justify-content-center">
                 <div class="d-flex flex-column">
                     <input type="text" class="p-2 form-control" placeholder="Enter Password" aria-label="Enter Password" aria-describedby="basic-addon2" @bind-value="passwordModel.Password" style="width: 100%;">
@@ -42,50 +42,50 @@
 
     @if (_userState.IsLoggedIn && _userState.IsAuthorizedToGroup(Gid))
     {
-         <div>
+        <div>
             <div class="input-group mb-3">
-                  <EditForm Model="@messageBoxModel" OnValidSubmit="@HandleMessage" style="width: 100%;">
-                    <DataAnnotationsValidator />
+                <EditForm Model="@messageBoxModel" OnValidSubmit="@HandleMessage" style="width: 100%;">
+                    <DataAnnotationsValidator/>
 
                     <div class="form-group d-flex justify-content-between">
                         <input type="text" class="form-control" placeholder="Type message here..." aria-label="Type message here..." aria-describedby="basic-addon2" @bind-value="messageBoxModel.Message" style="width: 100%;">
                         <button type="button" class="btn btn-primary" onclick="document.getElementById('inputImg').click()"><i class="oi oi-data-transfer-upload"></i></button>
                         <button type="submit" class="btn btn-primary"><span class="oi oi-arrow-circle-right"></span></button>
                     </div>
-                 </EditForm>
+                </EditForm>
             </div>
 
             <div class="text-break" id="messages">
-                @foreach (Message umsg in MessagesContainer.Groups[Gid].Messages.Reverse<Message>())
+                @foreach (Message umsg in MessagesContainer.Groups[Gid].GetMessages().Result.Reverse<Message>())
                 {
                     if (umsg.Msg.Contains("https://i.imgur.com/"))
                     {
-                        <span><b>[@umsg.Time] @(umsg.UserName):</b></span><br/>
+                        <span><b>[@umsg.Time] @(umsg.User):</b></span><br/>
                         <a href="@(umsg.Msg)" target="_blank">
                             <img alt="Loading image..." style="max-width: 50%; max-height: 50%;" src="@(umsg.Msg)"/><br/>
                         </a>
                     }
                     else if (IsValidUrl(umsg.Msg))
                     {
-                        <span><b>[@umsg.Time] @(umsg.UserName):</b></span>
+                        <span><b>[@umsg.Time] @(umsg.User):</b></span>
                         <a href="@(umsg.Msg)">@(umsg.Msg)</a><br/>
                     }
                     else if (umsg.Msg == "DUCK")
                     {
-                        <span><b>[@umsg.Time] @(umsg.UserName):</b></span><br/>
+                        <span><b>[@umsg.Time] @(umsg.User):</b></span><br/>
                         <img alt="DUCK" style="max-width: 75px; max-height: 75px;" src="/favicon.ico"/><br/>
                     }
                     else
                     {
-                        <span><b>[@umsg.Time] @(umsg.UserName):</b> @(umsg.Msg)</span><br/>
+                        <span><b>[@umsg.Time] @(umsg.User):</b> @(umsg.Msg)</span><br/>
                     }
                 }
             </div>
-        </div>   
+        </div>
     }
 
 
-    <InputFile id="inputImg" OnChange="@OnChange" @ref="inputImage" style="display:none;" accept=".gif,.jpg,.jpeg,.png" /> 
+    <InputFile id="inputImg" OnChange="@OnChange" @ref="inputImage" style="display:none;" accept=".gif,.jpg,.jpeg,.png"/>
 </div>
 
 @code {
@@ -135,14 +135,14 @@
                 request.Content = new StreamContent(e.File.OpenReadStream(10485760));
                 var response = await httpClient.SendAsync(request);
                 ImgurJSON? imgJson = await JsonSerializer.DeserializeAsync<ImgurJSON>(await response.Content.ReadAsStreamAsync());
-                AddMessage(imgJson.data.link);
+                await AddMessage(imgJson.data.link);
             }
         }
     }
 
-    public void AddMessage(string msg)
+    public async Task AddMessage(string msg)
     {
-        MessagesContainer.Groups[Gid].AddMessage(_userState.UserName, msg);
+        await MessagesContainer.Groups[Gid].AddMessage(_userState.UserName, msg);
 
         foreach (Messenger messenger in Instances)
         {
@@ -154,7 +154,7 @@
     //Message Handler
     private async Task HandleMessage()
     {
-        AddMessage(messageBoxModel.Message);
+        await AddMessage(messageBoxModel.Message);
         messageBoxModel.Message = "";
 
         InvokeAsync(StateHasChanged);
@@ -187,6 +187,8 @@
     #region OnInitialized and OnDispose
     protected override async Task OnInitializedAsync()
     {
+        Gid = MessagesContainer.Groups.FindIndex(x => x.Id == Gid);
+        
         Instances.Add(this);
 
         if (!_userState.IsLoggedIn)

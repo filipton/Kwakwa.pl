@@ -16,7 +16,7 @@ builder.Services.AddServerSideBlazor();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<UserState>();
 
-NpgsqlConnect.Init();
+DBConnect.Init();
 
 var app = builder.Build();
 

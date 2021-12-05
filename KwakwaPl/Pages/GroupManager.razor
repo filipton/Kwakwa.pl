@@ -5,7 +5,7 @@
 
 @if (Authorized)
 {
-    foreach (MessageGroup group in MessagesContainer.Groups)
+    foreach (Group group in MessagesContainer.Groups)
     {
         <span style="font-size: large; font-weight: bold; white-space: pre; font-family: monospace;">@group.GroupName.PadRight(16, ' ')</span> 
         <button class="btn btn-primary" @onclick="() => ClearButton(group.GroupName)">CLEAR</button>
@@ -40,8 +40,7 @@ else
         int index = MessagesContainer.Groups.FindIndex(x => x.GroupName == gname);
         if (index > -1)
         {
-            MessagesContainer.Groups[index].ClearMessages();
-            await NpgsqlConnect.ExecuteCommandWithoutReturn($"UPDATE MessagesGroups SET messagesJson = '' WHERE name = '{gname}';");
+            await DBConnect.ExecuteCommandWithoutReturn($"DELETE FROM Messages WHERE group_id = {MessagesContainer.Groups[index].Id};");
         }
     }
 
@@ -51,7 +50,8 @@ else
         if (index > -1)
         {
             MessagesContainer.Groups.RemoveAt(index);
-            await NpgsqlConnect.ExecuteCommandWithoutReturn($"DELETE FROM MessagesGroups WHERE name = '{gname}';");
+            await DBConnect.ExecuteCommandWithoutReturn($"DELETE FROM Messages WHERE group_id = {MessagesContainer.Groups[index].Id};");
+            await DBConnect.ExecuteCommandWithoutReturn($"DELETE FROM Groups WHERE name = '{MessagesContainer.Groups[index].Id}';");
         }
     }
 }

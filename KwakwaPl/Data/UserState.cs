@@ -11,7 +11,7 @@ namespace KwakwaPl.Data
 
         public bool IsAuthorizedToGroup(int gid)
         {
-            return !MessagesContainer.Groups[gid].PasswordSecured || (GroupPasswords.ContainsKey(gid) && MessagesContainer.Groups[gid].Password == GroupPasswords[gid]);
+            return string.IsNullOrWhiteSpace(MessagesContainer.Groups[gid].Password) || (GroupPasswords.ContainsKey(gid) && MessagesContainer.Groups[gid].Password == GroupPasswords[gid]);
         }
     }
 }
