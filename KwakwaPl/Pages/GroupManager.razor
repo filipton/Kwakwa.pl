@@ -49,9 +49,9 @@ else
         int index = MessagesContainer.Groups.FindIndex(x => x.GroupName == gname);
         if (index > -1)
         {
-            MessagesContainer.Groups.RemoveAt(index);
             await DBConnect.ExecuteCommandWithoutReturn($"DELETE FROM Messages WHERE group_id = {MessagesContainer.Groups[index].Id};");
-            await DBConnect.ExecuteCommandWithoutReturn($"DELETE FROM Groups WHERE name = '{MessagesContainer.Groups[index].Id}';");
+            await DBConnect.ExecuteCommandWithoutReturn($"DELETE FROM Groups WHERE id = {MessagesContainer.Groups[index].Id};");
+            MessagesContainer.Groups.RemoveAt(index);
         }
     }
 }
