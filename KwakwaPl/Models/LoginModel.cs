@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace KwakwaPl.Data
+namespace KwakwaPl.Models
 {
 	public class LoginModel
 	{
